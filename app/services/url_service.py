@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -28,3 +29,12 @@ def create_short_url(db: Session, original_url: str) -> URL:
             db.rollback()
 
     raise RuntimeError("Unable to generate a unique short code.")
+
+
+def get_url_by_short_code(
+    db: Session,
+    short_code: str,
+) -> URL | None:
+    """Retrieve a URL record by its short code."""
+    statement = select(URL).where(URL.short_code == short_code)
+    return db.scalar(statement)
