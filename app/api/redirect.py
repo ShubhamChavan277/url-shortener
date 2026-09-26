@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.services.analytics_service import record_click
 from app.services.url_service import get_url_by_short_code
 
 
@@ -22,5 +23,7 @@ def redirect_to_original_url(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Short URL not found.",
         )
+
+    record_click(db, url.id)
 
     return RedirectResponse(url=url.original_url)
