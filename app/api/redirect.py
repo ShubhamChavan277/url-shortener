@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -24,6 +26,21 @@ def redirect_to_original_url(
             detail="Short URL not found.",
         )
 
+    if url.expires_at is not None:
+        expiration_time = url.expires_at
+
+        if expiration_time.tzinfo is None:
+            expiration_time = expiration_time.replace(tzinfo=timezone.utc)
+
+        if expiration_time <= datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=status.HTTP_410_GONE,
+                detail="Short URL has expired.",
+            )
+
     record_click(db, url.id)
 
-    return RedirectResponse(url=url.original_url)
+    return RedirectResponse(
+        url=url.original_url,
+        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+    )

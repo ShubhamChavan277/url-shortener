@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.security import get_current_user_id
 from app.db.session import get_db
 from app.services.analytics_service import get_click_count
-from app.services.url_service import get_url_by_short_code
+from app.services.url_service import get_user_url_by_short_code
 
 
 router = APIRouter()
@@ -16,15 +17,20 @@ class AnalyticsResponse(BaseModel):
 
 
 @router.get(
-    "/urls/{short_code}/analytics",
+    "/api/v1/urls/{short_code}/stats",
     response_model=AnalyticsResponse,
 )
 def get_url_analytics(
     short_code: str,
     db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id),
 ) -> AnalyticsResponse:
-    """Return basic click analytics for a shortened URL."""
-    url = get_url_by_short_code(db, short_code)
+    """Return click analytics for a URL owned by the authenticated user."""
+    url = get_user_url_by_short_code(
+        db,
+        short_code,
+        current_user_id,
+    )
 
     if url is None:
         raise HTTPException(
