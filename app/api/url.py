@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 from app.core.security import get_current_user_id
 from app.db.session import get_db
@@ -47,7 +48,13 @@ def create_url(
 ) -> URLResponse:
     """Create a shortened URL for the authenticated user."""
 
-    enforce_rate_limit(http_request, "url_create")
+    enforce_rate_limit(
+        http_request,
+        "url_create",
+        user_id=current_user_id,
+        ip_limit=settings.url_create_ip_rate_limit_requests,
+        user_limit=settings.url_create_user_rate_limit_requests,
+    )
 
     if request.expires_at is not None and request.expires_at <= datetime.now(
         request.expires_at.tzinfo

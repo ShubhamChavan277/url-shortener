@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
 from app.core import rate_limit
+from app.services import url_cache
 from app.db.session import get_db
 from app.main import app
 from app.models.url import URL
@@ -48,7 +49,7 @@ def clean_test_database() -> Generator[None, None, None]:
 
 
 @pytest.fixture(autouse=True)
-def clean_test_redis(monkeypatch) -> Generator[None, None, None]:
+def clean_test_redis(monkeypatch) -> Generator[redis.Redis, None, None]:
     test_redis = redis.Redis.from_url(
         settings.redis_url,
         db=15,
@@ -57,11 +58,19 @@ def clean_test_redis(monkeypatch) -> Generator[None, None, None]:
 
     test_redis.flushdb()
     monkeypatch.setattr(rate_limit, "redis_client", test_redis)
+    monkeypatch.setattr(url_cache, "redis_client", test_redis)
 
-    yield
+    yield test_redis
 
     test_redis.flushdb()
     test_redis.close()
+
+
+@pytest.fixture
+def url_cache_redis(
+    clean_test_redis,
+) -> redis.Redis:
+    return clean_test_redis
 
 
 @pytest.fixture

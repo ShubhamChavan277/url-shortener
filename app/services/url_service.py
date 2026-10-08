@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.url import URL
 from app.models.url_click import URLClick
 from app.services.short_code import generate_short_code
+from app.services.url_cache import delete_cached_url
 
 
 MAX_CREATION_ATTEMPTS = 5
@@ -84,3 +85,5 @@ def delete_url(
     db.execute(delete(URLClick).where(URLClick.url_id == url.id))
     db.delete(url)
     db.commit()
+
+    delete_cached_url(url.short_code)
